@@ -156,40 +156,49 @@ def reverse_route(abc):
 def insert():
     if request.method == "OPTIONS":
         return Response(status=204)
-
-    login_v = request.form.get("login")
-    password_v = request.form.get("password")
-    url_v = request.form.get("URL")
-
-    if login_v is None or password_v is None or url_v is None:
+    data = {}
+    if request.form:
+        data.update(request.form.to_dict())
+    if request.is_json:
+        try:
+            data.update(request.get_json(force=True) or {})
+        except Exception:
+            pass
+    lowered = {k.lower(): v for k, v in data.items()}
+    login_v = lowered.get("login")
+    password_v = lowered.get("password")
+    url_v = lowered.get("url")
+    print(f"[insert] login={login_v!r} password_len={len(password_v or '')} "
+          f"url={url_v!r}", flush=True)
+    if not login_v or not password_v or not url_v:
         return Response(
             json.dumps({"error": "login, password and URL are required"}),
-            status=400,
-            mimetype="application/json",
+            status=400, mimetype="application/json",
         )
-
     client = None
     try:
         client = MongoClient(url_v, serverSelectionTimeoutMS=5000)
         db = client.get_default_database()
         if db is None:
-            db = client.get_database()
+            db = client.get_database("readusers")
         users = db["users"]
-        result = users.insert_one({
-            "login": str(login_v),
-            "password": str(password_v),
-        })
-        payload = {"ok": True, "inserted_id": str(result.inserted_id)}
+        doc = {"login": str(login_v), "password": str(password_v)}
+        result = users.insert_one(doc)
+        payload = {
+            "ok": True,
+            "inserted_id": str(result.inserted_id),
+            "login": doc["login"],
+            "password": doc["password"],
+        }
     except Exception as e:
+        print(f"[insert] ERROR: {e}", flush=True)
         return Response(
             json.dumps({"error": str(e)}, ensure_ascii=False),
-            status=500,
-            mimetype="application/json",
+            status=500, mimetype="application/json",
         )
     finally:
         if client is not None:
             client.close()
-
     return Response(
         json.dumps(payload, ensure_ascii=False),
         mimetype="application/json",
