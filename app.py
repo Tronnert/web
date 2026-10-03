@@ -1,4 +1,4 @@
-from flask import Flask, Response
+from flask import Flask, Response, request, jsonify
 
 app = Flask(__name__)
 
@@ -39,34 +39,54 @@ document.getElementById('bt').addEventListener('click', async () => {
 @app.after_request
 def add_headers(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "*"
-    resp.headers["Access-Control-Allow-Headers"] = "*"
-
+    resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = (
+        "x-test,ngrok-skip-browser-warning,Content-Type,Accept,Access-Control-Allow-Headers"
+    )
     if resp.mimetype == "text/plain":
         resp.headers["Content-Type"] = "text/plain; charset=UTF-8"
     elif resp.mimetype == "text/html":
         resp.headers["Content-Type"] = "text/html; charset=UTF-8"
+    elif resp.mimetype == "application/json":
+        resp.headers["Content-Type"] = "application/json"
     return resp
-
 
 @app.route("/")
 def index():
     return Response("restarh", mimetype="text/plain")
 
-
 @app.route("/login/")
 def login():
     return Response("restarh", mimetype="text/plain")
-
 
 @app.route("/promise/")
 def promise():
     return Response(TASK_CODE, mimetype="text/plain")
 
-
 @app.route("/fetch/")
 def fetch():
     return Response(FETCH_HTML, mimetype="text/html")
+
+@app.route("/result4/", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+def result4():
+    if request.method == "OPTIONS":
+        return Response(status=204)
+
+    x_test = request.headers.get("x-test", "")
+    try:
+        x_body = request.get_data(as_text=True)
+    except Exception:
+        x_body = request.get_data().decode("latin-1", errors="replace")
+
+    payload = {
+        "message": "restarh",
+        "x-result": x_test,
+        "x-body": x_body,
+    }
+    return Response(
+        __import__("json").dumps(payload, ensure_ascii=False),
+        mimetype="application/json",
+    )
 
 
 if __name__ == "__main__":
