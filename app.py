@@ -98,8 +98,11 @@ def result4():
     )
 
 
-@app.route("/<regex('[0-9]{6}'):ddmmyy>/")
+@app.route("/<string:ddmmyy>/")
 def date_route(ddmmyy):
+    if not (len(ddmmyy) == 6 and ddmmyy.isdigit()):
+        return Response("not found", status=404, mimetype="text/plain")
+
     today = datetime.now().strftime("%d-%m-%Y")
     payload = {"date": today, "login": LOGIN}
     return Response(
