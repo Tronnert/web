@@ -107,13 +107,29 @@ def result4():
 def date_route(ddmmyy):
     if not (len(ddmmyy) == 6 and ddmmyy.isdigit()):
         return Response("not found", status=404, mimetype="text/plain")
+    return Response(LOGIN, mimetype="text/plain")
 
-    today = datetime.now().strftime("%d-%m-%Y")
-    payload = {"date": today, "login": LOGIN}
-    return Response(
-        json.dumps(payload, ensure_ascii=False),
-        mimetype="application/json",
-    )
+
+@app.route("/add/<string:x1>/<string:x2>")
+def add_route(x1, x2):
+    try:
+        s = float(x1) + float(x2)
+    except ValueError:
+        return Response("not found", status=404, mimetype="text/plain")
+    if s.is_integer():
+        s = int(s)
+    return Response(str(s), mimetype="text/plain")
+
+
+@app.route("/mpy/<string:y1>/<string:y2>")
+def mpy_route(y1, y2):
+    try:
+        p = float(y1) * float(y2)
+    except ValueError:
+        return Response("not found", status=404, mimetype="text/plain")
+    if p.is_integer():
+        p = int(p)
+    return Response(str(p), mimetype="text/plain")
 
 
 @app.route("/size2json/", methods=["POST", "OPTIONS"])
