@@ -1,6 +1,10 @@
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request
+from datetime import datetime
+import json
 
 app = Flask(__name__)
+
+LOGIN = "restarh"
 
 TASK_CODE = (
     "function task(x) {\n"
@@ -51,21 +55,26 @@ def add_headers(resp):
         resp.headers["Content-Type"] = "application/json"
     return resp
 
+
 @app.route("/")
 def index():
     return Response("restarh", mimetype="text/plain")
+
 
 @app.route("/login/")
 def login():
     return Response("restarh", mimetype="text/plain")
 
+
 @app.route("/promise/")
 def promise():
     return Response(TASK_CODE, mimetype="text/plain")
 
+
 @app.route("/fetch/")
 def fetch():
     return Response(FETCH_HTML, mimetype="text/html")
+
 
 @app.route("/result4/", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 def result4():
@@ -84,9 +93,26 @@ def result4():
         "x-body": x_body,
     }
     return Response(
-        __import__("json").dumps(payload, ensure_ascii=False),
+        json.dumps(payload, ensure_ascii=False),
         mimetype="application/json",
     )
+
+
+@app.route("/<regex('[0-9]{6}'):ddmmyy>/")
+def date_route(ddmmyy):
+    today = datetime.now().strftime("%d-%m-%Y")
+    payload = {"date": today, "login": LOGIN}
+    return Response(
+        json.dumps(payload, ensure_ascii=False),
+        mimetype="application/json",
+    )
+
+
+@app.route("/api/rv/<string:abc>")
+def reverse_route(abc):
+    if not abc or not all("a" <= c <= "z" for c in abc):
+        return Response("not found", status=404, mimetype="text/plain")
+    return Response(abc[::-1], mimetype="text/plain")
 
 
 if __name__ == "__main__":
