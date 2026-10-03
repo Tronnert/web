@@ -1,4 +1,6 @@
 from flask import Flask, Response, request
+from PIL import Image
+import io
 from datetime import datetime
 import json
 
@@ -105,6 +107,37 @@ def date_route(ddmmyy):
 
     today = datetime.now().strftime("%d-%m-%Y")
     payload = {"date": today, "login": LOGIN}
+    return Response(
+        json.dumps(payload, ensure_ascii=False),
+        mimetype="application/json",
+    )
+
+
+@app.route("/size2json/", methods=["POST", "OPTIONS"])
+def size2json():
+    if request.method == "OPTIONS":
+        return Response(status=204)
+
+    file = request.files.get("image")
+    if file is None:
+        return Response(
+            json.dumps({"error": "no image field"}),
+            status=400,
+            mimetype="application/json",
+        )
+
+    try:
+        data = file.read()
+        img = Image.open(io.BytesIO(data))
+        width, height = img.size
+    except Exception as e:
+        return Response(
+            json.dumps({"error": str(e)}),
+            status=400,
+            mimetype="application/json",
+        )
+
+    payload = {"width": width, "height": height}
     return Response(
         json.dumps(payload, ensure_ascii=False),
         mimetype="application/json",
