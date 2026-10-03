@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-RUN pip install --no-cache-dir flask gunicorn pillow
+RUN pip install --no-cache-dir flask gunicorn pillow pymongo
 
 COPY app.py .
 

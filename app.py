@@ -3,6 +3,7 @@ from PIL import Image
 import io
 from datetime import datetime
 import json
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
@@ -65,7 +66,7 @@ def index():
 
 @app.route("/login/")
 def login():
-    return Response("restarh", mimetype="text/plain")
+    return Response(LOGIN, mimetype="text/plain")
 
 
 @app.route("/promise/")
@@ -149,6 +150,50 @@ def reverse_route(abc):
     if not abc or not all("a" <= c <= "z" for c in abc):
         return Response("not found", status=404, mimetype="text/plain")
     return Response(abc[::-1], mimetype="text/plain")
+
+
+@app.route("/insert/", methods=["POST", "OPTIONS"])
+def insert():
+    if request.method == "OPTIONS":
+        return Response(status=204)
+
+    login_v = request.form.get("login")
+    password_v = request.form.get("password")
+    url_v = request.form.get("URL")
+
+    if login_v is None or password_v is None or url_v is None:
+        return Response(
+            json.dumps({"error": "login, password and URL are required"}),
+            status=400,
+            mimetype="application/json",
+        )
+
+    client = None
+    try:
+        client = MongoClient(url_v, serverSelectionTimeoutMS=5000)
+        db = client.get_default_database()
+        if db is None:
+            db = client.get_database()
+        users = db["users"]
+        result = users.insert_one({
+            "login": str(login_v),
+            "password": str(password_v),
+        })
+        payload = {"ok": True, "inserted_id": str(result.inserted_id)}
+    except Exception as e:
+        return Response(
+            json.dumps({"error": str(e)}, ensure_ascii=False),
+            status=500,
+            mimetype="application/json",
+        )
+    finally:
+        if client is not None:
+            client.close()
+
+    return Response(
+        json.dumps(payload, ensure_ascii=False),
+        mimetype="application/json",
+    )
 
 
 if __name__ == "__main__":
