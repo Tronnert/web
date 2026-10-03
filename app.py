@@ -1,9 +1,11 @@
 from flask import Flask, Response, request
 from PIL import Image
 import io
+import requests
 from datetime import datetime
 import json
 from pymongo import MongoClient
+
 
 app = Flask(__name__)
 
@@ -64,7 +66,7 @@ def index():
     return Response("restarh", mimetype="text/plain")
 
 
-@app.route("/login/")
+@app.route("/login")
 def login():
     return Response(LOGIN, mimetype="text/plain")
 
@@ -203,6 +205,30 @@ def insert():
         json.dumps(payload, ensure_ascii=False),
         mimetype="application/json",
     )
+
+
+@app.route("/id/<string:N>")
+def id_route(N):
+    url = f"https://nd.kodaktor.ru/users/{N}"
+    headers = {"Content-Type": None, "Accept": "application/json"}
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        return Response(
+            json.dumps({"error": str(e)}, ensure_ascii=False),
+            status=502, mimetype="application/json",
+        )
+    login_value = data.get("login")
+    if login_value is None:
+        return Response(
+            json.dumps({"error": "login not found in response", "raw": data},
+                       ensure_ascii=False),
+            status=502, mimetype="application/json",
+        )
+
+    return Response(str(login_value), mimetype="text/plain")
 
 
 if __name__ == "__main__":
