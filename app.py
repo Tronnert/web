@@ -1,7 +1,8 @@
-from flask import Flask, Response, request
+from flask import Flask, Response, request, send_file
 from PIL import Image
 import io
 import requests
+import gzip
 from datetime import datetime
 import json
 from pymongo import MongoClient
@@ -245,6 +246,24 @@ def id_route(N):
         )
 
     return Response(str(login_value), mimetype="text/plain")
+
+
+@app.route("/zipper", methods=["POST"])
+def zipper():
+    if 'file' not in request.files:
+        return Response("No file part", status=400)
+    
+    file = request.files['file']
+    if file.filename == '':
+        return Response("No selected file", status=400)
+    file_data = file.read()
+    compressed_data = gzip.compress(file_data)
+    return send_file(
+        io.BytesIO(compressed_data),
+        mimetype='application/gzip',
+        as_attachment=True,
+        download_name=f"{file.filename}.gz"
+    )
 
 
 if __name__ == "__main__":
